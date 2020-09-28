@@ -1,3 +1,5 @@
+'use strict'
+
 const mongoose = require('mongoose')
 
 const schema = mongoose.Schema
@@ -11,7 +13,7 @@ const LyricsSchema = new schema({
     },
     type: ['song', 'tutorial', 'documental', 'informative', 'social', 'other'],
     hideWords: [String],
-    splitLetterWithoutHiddenWords: [String],
+    splitLyricExcludingHiddenWords: [String],
     idGeniusLyrics: String
 })
 

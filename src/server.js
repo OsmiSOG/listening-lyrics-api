@@ -1,3 +1,5 @@
+'use strict'
+
 const express = require('express')
 const connectDB = require('./mongodb')
 const apiLyrics = require('./api/lyrics/routes')

@@ -4,10 +4,9 @@ const express = require('express')
 const lyricsController = require('./controller')
 const api = express.Router()
 
-api.get('/', (req, res) => {
-    res.status(200).send({message: 'Welcome to lyrics api'})
-})
-api.get('/lyrics', lyricsController.getLyrics)
+api.get('/', lyricsController.index)
+api.get('/lyrics', lyricsController.searchLyrics, lyricsController.index)
+// api.get('/lyrics/:search', lyricsController.searchLyrics)
 api.get('/lyrics/:id', lyricsController.getLyricById)
 api.post('/lyrics', lyricsController.newLyrics)
 
