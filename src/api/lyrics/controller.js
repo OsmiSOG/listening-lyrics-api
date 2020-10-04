@@ -11,7 +11,7 @@ function index(req, res) {
         .exec((err, lyrics) => {
             if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
             
-            res.status(200).send({lyrics});
+            res.status(200).send(lyrics);
         })
     return;
 }
@@ -22,10 +22,10 @@ function searchLyrics(req, res, next) {
         console.log(req.query.search);
         switch (typeSearch) {
             case 'youtube':
-                LyricsModel.findOne({YoutubeURL:req.query.search}).exec((err, lyric) => {
+                LyricsModel.find({YoutubeURL:req.query.search}).exec((err, lyric) => {
                     if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
-                    if (!lyric) return res.status(404).send({message: 'Song not finded'})
-                    res.status(200).send({lyric});
+                    if (!lyric) return res.status(404).send({message: 'lyric not finded'})
+                    res.status(200).send(lyric);
                 })
                 break;
             case 'name':
@@ -35,8 +35,8 @@ function searchLyrics(req, res, next) {
                 LyricsModel.find({VideoName: {$regex: regexp, $options:'gi'}})
                     .exec((err, lyrics) => {
                         if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
-                        if (!lyrics) return res.status(404).send({message: 'Song not finded'})
-                        res.status(200).send({lyrics});
+                        if (!lyrics) return res.status(404).send({message: 'lyric not finded'})
+                        res.status(200).send(lyrics);
                     })
                 break;
             default:
@@ -45,17 +45,44 @@ function searchLyrics(req, res, next) {
         }              
     } else {
         next()
-        // return res.status(200).send({message:'Search a lyric by youtube link or name'})
     } 
 }
-function getLyricById(req, res) {
+function getLyricById(req, res, next) {
     let lyricId = req.params.id
 
     LyricsModel.findById(lyricId, (err, lyric) => {
         if (err) return res.status(500).send({message: 'Error al resolver la solicitud'})
         if (!lyric) return res.status(404).send({message: 'song not finded'})
-        res.status(200).send({lyric})
+        req.lyric = lyric
+        next()
     })
+
+}
+
+function resLyricId(req, res) {
+    res.status(200).send(req.lyric)
+}
+
+function qualifyLyrics(req, res) {
+    const lyric = req.lyric
+    const wordsToQualify = req.body.wordsAnswered
+    if (!Array.isArray(wordsToQualify)) return res.status(500).send({message : 'The parameters no are compatible'})
+    let rightWords = []
+    let wrongWords = []
+    lyric.hideWords.forEach((word, i) => {
+        if (word.toLowerCase() === wordsToQualify[i].toLowerCase()) {
+            rightWords.push(wordsToQualify[i])
+        } else {
+            wrongWords.push(wordsToQualify[i])
+        }
+    });
+    const score = {
+        rightWords,
+        wrongWords,
+        score : `${rightWords.length}/${lyric.hideWords.length}`,
+        percentageScore : (rightWords.length/lyric.hideWords.length)*100
+    }
+    res.status(200).send(score)
 }
 
 function newLyrics(req, res) {
@@ -79,4 +106,4 @@ function newLyrics(req, res) {
     })
 }
 
-module.exports = {searchLyrics, getLyricById, newLyrics, index}
+module.exports = { index, searchLyrics, getLyricById, resLyricId, qualifyLyrics, newLyrics}
