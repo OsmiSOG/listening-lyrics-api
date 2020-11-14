@@ -15,7 +15,7 @@ function initServer(config) {
             console.log(`server listen at http://localhost:${config.server.port}`);
         })
     }).catch(error => {
-        console.log('error');
+        console.log('error connect db');
     })
 
 }

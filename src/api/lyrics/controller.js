@@ -5,11 +5,12 @@ const LyricsModel = require('./model')
 function index(req, res) {
     let page = req.query.page ? parseInt(req.query.page) : 0
     let limit = req.query.limit ? parseInt(req.query.limit) : 10
+    // console.log(page, limit);
     LyricsModel.find({})
         .limit(limit)
         .skip(page*limit)
         .exec((err, lyrics) => {
-            if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
+            if (err) return res.status(500).send({message: 'error al resolver la solicitud', success:falses})
             
             res.status(200).send(lyrics);
         })
