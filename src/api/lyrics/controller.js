@@ -1,11 +1,11 @@
 'use strict'
 
 const LyricsModel = require('./model')
+const ParseLyrics = require('../../services/parserLyrics')
 
 function index(req, res) {
     let page = req.query.page ? parseInt(req.query.page) : 0
     let limit = req.query.limit ? parseInt(req.query.limit) : 10
-    // console.log(page, limit);
     LyricsModel.find({})
         .limit(limit)
         .skip(page*limit)
@@ -23,7 +23,7 @@ function searchLyrics(req, res, next) {
         console.log(req.query.search);
         switch (typeSearch) {
             case 'youtube':
-                LyricsModel.find({YoutubeURL:req.query.search}).exec((err, lyric) => {
+                LyricsModel.find({youtube_url:req.query.search}).exec((err, lyric) => {
                     if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
                     if (!lyric) return res.status(404).send({message: 'lyric not finded'})
                     res.status(200).send(lyric);
@@ -33,7 +33,7 @@ function searchLyrics(req, res, next) {
                 let words = req.query.search.split(' ')
                 let regexp = `${words.reduce((acc, cur)=>`${acc}|${cur}`)}`
                 console.log(regexp);
-                LyricsModel.find({VideoName: {$regex: regexp, $options:'gi'}})
+                LyricsModel.find({video_name: {$regex: regexp, $options:'gi'}})
                     .exec((err, lyrics) => {
                         if (err) return res.status(500).send({message: 'error al resolver la solicitud'})
                         if (!lyrics) return res.status(404).send({message: 'lyric not finded'})
@@ -48,6 +48,7 @@ function searchLyrics(req, res, next) {
         next()
     } 
 }
+
 function getLyricById(req, res, next) {
     let lyricId = req.params.id
 
@@ -70,8 +71,8 @@ function qualifyLyrics(req, res) {
     if (!Array.isArray(wordsToQualify)) return res.status(500).send({message : 'The parameters no are compatible'})
     let rightWords = []
     let wrongWords = []
-    lyric.hideWords.forEach((word, i) => {
-        if (word.toLowerCase() === wordsToQualify[i].toLowerCase()) {
+    lyric.hidden_keyword_lyric.forEach((word, i) => {
+        if (word.toLowerCase().trim() === wordsToQualify[i].toLowerCase().trim()) {
             rightWords.push(wordsToQualify[i])
         } else {
             wrongWords.push(wordsToQualify[i])
@@ -80,28 +81,35 @@ function qualifyLyrics(req, res) {
     const score = {
         rightWords,
         wrongWords,
-        score : `${rightWords.length}/${lyric.hideWords.length}`,
-        percentageScore : (rightWords.length/lyric.hideWords.length)*100
+        score : `${rightWords.length}/${lyric.hidden_keyword_lyric.length}`,
+        percentageScore : (rightWords.length/lyric.hidden_keyword_lyric.length)*100
     }
     res.status(200).send(score)
 }
 
 function newLyrics(req, res) {
-    // console.log('POST /api/product');
-    // console.log(req.body);
-    let lyric = new LyricsModel()
-    lyric.VideoName = req.body.videoName
-    lyric.YoutubeURL = req.body.youtubeURL
-    lyric.collaborator.name = req.body.collaboratorName
-    lyric.collaborator.id = req.body.collaboratorId
-    lyric.type = req.body.type
-    lyric.hideWords = req.body.hideWords
-    lyric.splitLyricExcludingHiddenWords = req.body.splitLyric
+    let lyric = req.body.lyric
+
+    let Lyric = new LyricsModel()
+    Lyric.video_name = req.body.videoName
+    Lyric.youtube_url = req.body.youtubeURL
+    Lyric.language = req.body.language
+    Lyric.collaborator_id = req.body.collaboratorId
+    Lyric.type = req.body.type
+    Lyric.hidden_keyword = req.body.keywords
+    Lyric.hidden_keyword_lyric = ParseLyrics.hiddenKeyword(lyric, Lyric.hidden_keyword)
+    Lyric.lyric_original_format = lyric
+    Lyric.lyric_html_format = ParseLyrics.toHtml(lyric)
+    Lyric.lyric_without_format = ParseLyrics.withoutFormat(lyric)
+    Lyric.lyric_hidden_keyword_html_format = ParseLyrics.hiddenKeywordToHtml(lyric, Lyric.hidden_keyword)
+    Lyric.lyric_hidden_keyword_without_format = ParseLyrics.hiddenKeywordFormat(lyric, Lyric.hidden_keyword)
+    Lyric.genius_lyrics_id = req.body.idGenius
+
     if (req.body.idGeniusLyrics) {
         lyric.idGeniusLyrics = req.body.idGeniusLyrics
     }
 
-    lyric.save((err, lyricStored) => {
+    Lyric.save((err, lyricStored) => {
         if (err) return res.status(500).send({message: `Error al guardar en la base de datos ${err}`})
         res.status(200).send({lyric: lyricStored})
     })

@@ -19,7 +19,9 @@
   "homepage": "https://github.com/OsmiSOG/listening-lyrics-api#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "mongoose": "^5.10.5"
+    "hashids": "^2.2.8",
+    "mongoose": "^5.10.5",
+    "node-html-parser": "^3.2.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
